@@ -56,7 +56,7 @@ const preferencesSchema = z.object({
 
 const userResponseSchema = z.object({
     id: z.string().uuid(),
-    email: z.string().email(),
+    email: z.string().email().nonempty("Email is required"),
     firstName: z.string(),
     lastName: z.string(),
     role: z.enum(['ADMIN', 'CUSTOMER', 'SELLER', 'SUPER_ADMIN']),
