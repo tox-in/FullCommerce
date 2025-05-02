@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       String         @id @default(uuid())
+  email                    String         @unique
+  password                 String
+  firstName                String
+  lastName                 String
+  role                     Role           @default(CUSTOMER)
+  isEmailVerified          Boolean        @default(false)
+  emailVerificationToken   String?
+  emailVerificationExpires DateTime?
+  passwordResetToken       String?
+  passwordResetExpires     DateTime?
+  lastLogin                DateTime?
+  phone                    String?
+  avatar                   String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  address                  Address?
+  cart                     Cart?
+  orders                   Order[]
+  preferences              Preferences?
+  sellerProfile            SellerProfile?
+}
+
+model Address {
+  id      String  @id @default(uuid())
+  street  String
+  city    String
+  state   String
+  country String
+  zipCode String
+  userId  String  @unique
+  user    User    @relation(fields: [userId], references: [id])
+  Order   Order[]
+}
+
+model SellerProfile {
+  id               String    @id @default(uuid())
+  storeName        String
+  storeDescription String
+  storeLogo        String?
+  storeBanner      String?
+  isVerified       Boolean   @default(false)
+  userId           String    @unique
+  Product          Product[]
+  user             User      @relation(fields: [userId], references: [id])
+}
+
+model Preferences {
+  id                 String  @id @default(uuid())
+  emailNotifications Boolean @default(true)
+  marketingEmails    Boolean @default(false)
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id              String        @id @default(uuid())
+  name            String
+  description     String
+  price           Float
+  stock           Int
+  category        String
+  categoryId      String
+  sellerProfileId String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+  sellerProfile   SellerProfile @relation(fields: [sellerProfileId], references: [id])
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  userId            String
+  total             Float
+  status            OrderStatus   @default(PENDING)
+  paymentStatus     PaymentStatus @default(PENDING)
+  transactionId     String?
+  shippingAddressId String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  addressId         String?
+  shippingAddress   Address?      @relation(fields: [addressId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([orderId, productId])
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  SELLER
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
